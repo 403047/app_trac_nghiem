@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
-import 'settings_profile/notification_screen.dart';
-import 'profile_screen.dart';
-import 'teacher_screen.dart';
+import 'settings_profile/thong_bao.dart';
+import 'thong_tin_ca_nhan.dart';
+import 'trang_giao_vien.dart';
 import 'dart:convert';
 
 class QuestionModel {
@@ -269,7 +269,7 @@ class _AddQuestionScreenState extends State<AddQuestionScreen> {
         return;
       }
 
-      const message = 'Bài thi đã được lưu và sẵn sàng để chia sẻ!';
+      const message = 'Bài thi đã được lưu thành công!';
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(

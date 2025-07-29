@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'profile_screen.dart';
-import 'settings_profile/notification_screen.dart';
-import 'create_exam_screen.dart';
+import 'thong_tin_ca_nhan.dart';
+import 'settings_profile/thong_bao.dart';
+import 'tao_bai_thi.dart';
 import 'package:intl/intl.dart';
 import '../utils/user_prefs.dart';
 import '../services/api_service.dart';
-import 'exam_results_screen.dart';
-import 'login_screen.dart'; // THÊM IMPORT NÀY
+import 'xem_hoc_sinh_da_lam_bthi.dart';
+import 'dang_nhap.dart'; // THÊM IMPORT NÀY
 
 class TeacherScreen extends StatefulWidget {
   const TeacherScreen({super.key});
@@ -189,6 +189,7 @@ class _TeacherScreenState extends State<TeacherScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        automaticallyImplyLeading: false, // bỏ nút back
         title: Text("Xin chào, $username", style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
         actions: [
           Padding(
@@ -303,15 +304,12 @@ class ExamCard extends StatelessWidget {
     super.key,
   });
 
-  String _formatDateTime(String? dateTimeString) {
-    if (dateTimeString == null || dateTimeString.isEmpty) return 'N/A';
-    try {
-      final dateTime = DateTime.parse(dateTimeString).toLocal();
-      return DateFormat('dd/MM/yyyy - HH:mm').format(dateTime);
-    } catch (_) {
-      return dateTimeString;
-    }
+  String _formatDateTime(String dateString) {
+    DateTime date = DateTime.parse(dateString); // Đã là local
+    return DateFormat('dd/MM/yyyy HH:mm').format(date);
   }
+
+
 
   void _shareCode(BuildContext context, String code) {
     showDialog(

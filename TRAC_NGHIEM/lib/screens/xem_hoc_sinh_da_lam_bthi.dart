@@ -46,7 +46,7 @@ class _ExamResultsScreenState extends State<ExamResultsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Kết quả: ${widget.examTitle}'),
-        backgroundColor: const Color(0xff0052CC),
+        backgroundColor: const Color(0xff0052cc), foregroundColor: Colors.white,
       ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _resultsFuture,

@@ -17,7 +17,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   bool _obscureCurrent = true;
   bool _obscureNew = true;
 
-  // HÀM _updatePassword ĐÃ ĐƯỢC VIẾT LẠI HOÀN TOÀN
+  // HÀM _updatePassword
   Future<void> _updatePassword() async {
     if (!_formKey.currentState!.validate()) {
       return;

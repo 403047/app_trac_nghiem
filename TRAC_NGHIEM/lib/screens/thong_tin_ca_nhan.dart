@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../utils/user_prefs.dart';
 import '../utils/image_helper.dart';
-import 'settings_profile/notification_screen.dart';
-import 'login_screen.dart';
-import 'settings_profile/change_password_screen.dart';
-import 'settings_profile/delete_account_screen.dart';
+import 'settings_profile/thong_bao.dart';
+import 'dang_nhap.dart';
+import 'settings_profile/doi_mat_khau.dart';
+import 'settings_profile/xoa_tai_khoan.dart';
 import 'dart:convert';
 
 class ProfileScreen extends StatefulWidget {

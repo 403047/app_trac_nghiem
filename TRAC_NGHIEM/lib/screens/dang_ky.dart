@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'login_screen.dart';
+import 'dang_nhap.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:math' as math;
 import 'dart:convert';
@@ -29,7 +29,7 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
-  // --- Animation Controllers (giữ nguyên) ---
+  // --- Animation Controllers
   late final AnimationController _controller;
   late final Animation<double> _rotationAnimation;
   late final AnimationController _appleController;
@@ -40,7 +40,7 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
   @override
   void initState() {
     super.initState();
-    // Khởi tạo animation (giữ nguyên)
+    // Khởi tạo animation
     _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 800))..repeat(reverse: true);
     _rotationAnimation = Tween<double>(begin: -0.05, end: 0.05).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
     _appleController = AnimationController(vsync: this, duration: const Duration(milliseconds: 600))..repeat(reverse: true);
@@ -64,7 +64,7 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
     super.dispose();
   }
 
-  // --- HÀM registerUser ĐÃ ĐƯỢC CẬP NHẬT ---
+  // --- HÀM registerUser
   Future<void> registerUser() async {
     if (_formKey.currentState!.validate()) {
       showDialog(
@@ -324,7 +324,7 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
                       AnimatedBuilder(
                         animation: _tiltController,
                         builder: (context, child) {
-                          final text = "student-mobile-web.azota.vn";
+                          final text = "app_trac_nghiem_so1.vn";
                           return Row(
                             mainAxisSize: MainAxisSize.min,
                             children: List.generate(text.length, (index) {

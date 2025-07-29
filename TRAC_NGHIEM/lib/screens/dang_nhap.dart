@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'home_screen.dart';
-import 'register_screen.dart';
-import 'login_help_screen.dart';
-import 'teacher_screen.dart';
+import 'trang_hoc_sinh.dart';
+import 'dang_ky.dart';
+import 'doi_mat_khau.dart';
+import 'trang_giao_vien.dart';
 import '../utils/user_prefs.dart';
 import '../services/api_service.dart';
 import 'dart:convert';
@@ -55,7 +55,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     super.dispose();
   }
 
-  // HÀM XỬ LÝ ĐĂNG NHẬP MỚI
+  // HÀM XỬ LÝ ĐĂNG NHẬP
   Future<void> _handleLogin() async {
     if (_formKey.currentState!.validate()) {
       showDialog(
@@ -86,7 +86,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
             fullName: user['fullName'],
             email: user['email'],
             role: user['role'],
-            createdAt: DateTime.now().toIso8601String(), // Nên lấy từ server nếu có
+            createdAt: DateTime.now().toIso8601String(),
           );
 
           if (user['role'] == 'teacher') {
@@ -267,15 +267,14 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                       child: const Text("Đăng ký"),
                     ),
                   ),
-                  const SizedBox(height: 120),
-                  const SizedBox(height: 180),
+                  const SizedBox(height: 190),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       AnimatedBuilder(
                         animation: _tiltController,
                         builder: (context, child) {
-                          final text = "student-mobile-web.tracnghiem.vn";
+                          final text = "app_trac_nghiem_so1.vn";
                           return Row(
                             mainAxisSize: MainAxisSize.min,
                             children: List.generate(text.length, (index) {

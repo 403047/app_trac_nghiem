@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 import '../utils/user_prefs.dart';
-import 'quiz_screen.dart';
-import 'review_screen.dart';
+import 'lam_bai_thi.dart';
+import 'xem_lai_bai_thi.dart';
 
 class ExamDetailScreen extends StatefulWidget {
   final Map<String, dynamic> exam;

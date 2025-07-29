@@ -4,8 +4,7 @@ import '../utils/user_prefs.dart';
 import 'dart:io';
 
 class ApiService {
-  // baseUrl không chứa /api
-  static const String baseUrl = 'http://192.168.2.41:5162';
+  static const String baseUrl = 'http://172.16.7.64:5162';
 
   static Future<Map<String, String>> _getAuthHeaders() async {
     final token = await UserPrefs.getToken();
@@ -271,18 +270,15 @@ class ApiService {
     }
   }
 
-  static Future<int?> createExam(Map<String, dynamic> examData) async {
+  static Future<http.Response> createExam(Map<String, dynamic> examData) async {
     final headers = await _getAuthHeaders();
     final response = await http.post(
       Uri.parse("$baseUrl/api/exams/create"),
       headers: headers,
       body: jsonEncode(examData),
     );
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body)['id'];
-    } else {
-      return null;
-    }
+    // Trả về toàn bộ đối tượng response để UI có thể đọc statusCode và body
+    return response;
   }
 
   static Future<void> updateExamById(int examId, Map<String, dynamic> examData) async {
@@ -391,6 +387,21 @@ class ApiService {
 
 
   static Future<void> deleteQuestion(int questionId) async {
-    await http.delete(Uri.parse('$baseUrl/questions/$questionId'));
+    // Lấy header xác thực để đảm bảo có quyền xóa
+    final headers = await _getAuthHeaders();
+
+    // SỬA LẠI URL CHO ĐÚNG
+    final url = Uri.parse('$baseUrl/api/questions/$questionId');
+
+    final response = await http.delete(
+      url,
+      headers: headers, // Gửi kèm token
+    );
+
+    // KIỂM TRA PHẢN HỒI TỪ SERVER
+    // Server trả về 204 NoContent khi xóa thành công
+    if (response.statusCode != 204) {
+      throw Exception('Lỗi khi xóa câu hỏi. Mã lỗi: ${response.statusCode}');
+    }
   }
 }

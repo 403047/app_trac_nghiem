@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'screens/home_screen.dart';
-import 'screens/login_screen.dart';
-import 'screens/teacher_screen.dart';
+import 'screens/trang_hoc_sinh.dart';
+import 'screens/dang_nhap.dart';
+import 'screens/trang_giao_vien.dart';
 import 'utils/user_prefs.dart';
+import 'screens/hieu_ung_vao_app.dart';
 
 // SỬA LẠI HÀM MAIN ĐỂ CÓ THỂ KIỂM TRA ĐĂNG NHẬP
 void main() async {
@@ -26,7 +27,7 @@ void main() async {
     }
   } else {
     // Nếu không, hiển thị màn hình đăng nhập
-    initialScreen = const LoginScreen();
+    initialScreen = const SplashScreen();
   }
 
   runApp(MyApp(initialScreen: initialScreen));

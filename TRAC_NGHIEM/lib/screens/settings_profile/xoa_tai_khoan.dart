@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../login_screen.dart';
+import '../dang_nhap.dart';
 import '../../services/api_service.dart';
 import '../../utils/user_prefs.dart';
 import 'dart:convert';
@@ -21,7 +21,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
     super.initState();
   }
 
-  // HÀM XỬ LÝ XÓA TÀI KHOẢN ĐÃ ĐƯỢC CẬP NHẬT
+  // HÀM XỬ LÝ XÓA TÀI KHOẢN
   void _handleDeleteAccount() {
     showDialog(
       context: context,

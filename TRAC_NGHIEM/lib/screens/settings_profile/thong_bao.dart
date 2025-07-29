@@ -111,7 +111,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
                   ),
                   subtitle: Text('Hạn nộp: ${_formatDateTime(notification['deadline'])}'),
                   onTap: () {
-                    // TODO: Điều hướng đến trang chi tiết bài thi nếu cần
                   },
                 ),
               );

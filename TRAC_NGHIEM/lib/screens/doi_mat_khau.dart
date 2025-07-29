@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart'; // Sử dụng ApiService
-import 'login_screen.dart';
+import 'dang_nhap.dart';
 import 'dart:convert';
 
 class LoginHelpScreen extends StatefulWidget {
@@ -42,7 +42,7 @@ class _LoginHelpScreenState extends State<LoginHelpScreen> with TickerProviderSt
     super.dispose();
   }
 
-  // HÀM _resetPassword ĐÃ ĐƯỢC VIẾT LẠI HOÀN TOÀN
+  // HÀM _resetPassword
   Future<void> _resetPassword() async {
     if (!_formKey.currentState!.validate()) {
       return;

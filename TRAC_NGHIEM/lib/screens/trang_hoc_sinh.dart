@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../services/api_service.dart';
 import '../utils/user_prefs.dart';
-import 'exam_detail_screen.dart';
-import 'profile_screen.dart';
-import 'login_screen.dart';
-import 'settings_profile/notification_screen.dart';
+import 'chi_tiet_bai_thi.dart';
+import 'thong_tin_ca_nhan.dart';
+import 'dang_nhap.dart';
+import 'settings_profile/thong_bao.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -105,100 +105,245 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  /// Xử lý khi người dùng nhấn nút thêm bài thi bằng mã
   Future<void> _onAddPressed() async {
-    final code = await _askForCode();
-    if (code == null || code.isEmpty) return;
+    String? code;
 
-    setState(() => _isLoading = true);
+    while (true) {
+      code = await _askForCode();
 
-    try {
-      final exam = await ApiService.getExamByCode(code);
+      if (code == null) return;
+
+      if (code.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Vui lòng nhập mã bài thi.")),
+          );
+        }
+        continue;
+      }
+
+      setState(() => _isLoading = true);
+
+      Map<String, dynamic>? exam;
+
+      try {
+        exam = await ApiService.getExamByCode(code);
+      } catch (e) {
+        code = await _askForCode(showInvalidCodeError: true);
+        setState(() => _isLoading = false);
+        continue;
+      }
+
       final examId = exam['id'] as int;
-      String? examPassword = exam['password'] as String?;
+      final examPassword = exam['password'] as String?;
 
-      String? inputPassword;
-      if (examPassword != null && examPassword.isNotEmpty) {
-        inputPassword = await _askForPassword();
-        if (inputPassword == null) {
-          setState(() => _isLoading = false);
-          return;
+      // 👉 Thử thêm bài thi ngay lập tức nếu không có mật khẩu
+      if (examPassword == null || examPassword.isEmpty) {
+        final response = await ApiService.addExamToUser(examId: examId, password: null);
+
+        setState(() => _isLoading = false);
+
+        if (response.statusCode == 200) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Đã thêm bài thi thành công!")),
+          );
+          await _fetchExamsFromApi();
+        } else if (response.statusCode == 409) {
+          // Bài thi đã có → báo lỗi ngay
+          await _showAlreadyAddedDialog();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Lỗi từ server: ${response.body}")),
+          );
+        }
+
+        return;
+      }
+
+      // Nếu có mật khẩu → kiểm tra tồn tại trước khi hỏi
+      final checkResponse = await ApiService.addExamToUser(
+        examId: examId,
+        password: '',
+      );
+
+      if (checkResponse.statusCode == 409) {
+        setState(() => _isLoading = false);
+        await _showAlreadyAddedDialog();
+        return;
+      }
+
+      // Nếu chưa tồn tại → tiến hành hỏi mật khẩu
+      int retryCount = 0;
+      bool success = false;
+
+      while (retryCount < 5 && !success) {
+        final inputPassword = await _askForPasswordWithRetry(retryCount);
+
+
+        if (inputPassword == null) break;
+
+        final response = await ApiService.addExamToUser(
+          examId: examId,
+          password: inputPassword,
+        );
+
+        if (response.statusCode == 200) {
+          success = true;
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Đã thêm bài thi thành công!")),
+            );
+            await _fetchExamsFromApi();
+          }
+        } else if (response.statusCode == 401) {
+          retryCount++;
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Lỗi từ server: ${response.body}")),
+          );
+          break;
         }
       }
 
-      final response = await ApiService.addExamToUser(
-        examId: examId,
-        password: inputPassword,
-      );
+      if (!success && retryCount >= 5) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Bạn đã nhập sai mật khẩu quá 5 lần.")),
+        );
+      }
 
-      if (!mounted) return;
-
-      if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Đã thêm bài thi thành công!")),
-        );
-        await _fetchExamsFromApi();
-      } else if (response.statusCode == 401) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Mật khẩu không đúng.")),
-        );
-      } else if (response.statusCode == 409) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Bài thi này đã có trong danh sách của bạn.")),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Lỗi: ${response.body}")),
-        );
-      }
-    } catch (e) {
-      debugPrint('>>> LỖI KẾT NỐI API: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Mã bài thi không tồn tại hoặc có lỗi xảy ra.")),
-        );
-      }
-    } finally {
-      if(mounted) {
-        setState(() => _isLoading = false);
-      }
+      setState(() => _isLoading = false);
+      return;
     }
   }
 
-  Future<String?> _askForCode() {
-    String? code;
-    return showDialog<String>(
+  Future<void> _showAlreadyAddedDialog() async {
+    await showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text("Nhập mã bài thi"),
-        content: TextField(
-          onChanged: (v) => code = v.trim(),
-          decoration: const InputDecoration(hintText: "Mã đề thi"),
-        ),
+        title: const Text("Bài thi đã tồn tại"),
+        content: const Text("Bài thi này đã có trong danh sách của bạn."),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Hủy")),
-          TextButton(onPressed: () => Navigator.pop(context, code), child: const Text("Tìm")),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("OK"),
+          ),
         ],
       ),
     );
   }
 
-  Future<String?> _askForPassword() {
-    String? pwd;
+  Future<String?> _askForCode({bool showInvalidCodeError = false}) {
+    final TextEditingController controller = TextEditingController();
+    bool showEmptyError = false;
+    bool showInvalidError = showInvalidCodeError;
+
     return showDialog<String>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("Nhập mật khẩu đề thi"),
-        content: TextField(
-          onChanged: (v) => pwd = v,
-          obscureText: true,
-          decoration: const InputDecoration(hintText: "Mật khẩu"),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Hủy")),
-          TextButton(onPressed: () => Navigator.pop(context, pwd), child: const Text("OK")),
-        ],
-      ),
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text("Nhập mã bài thi"),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: controller,
+                    decoration: InputDecoration(
+                      hintText: "Mã đề thi",
+                      errorText: showEmptyError
+                          ? "Vui lòng nhập mã đề thi"
+                          : showInvalidError
+                          ? "Mã không đúng hoặc không tồn tại"
+                          : null,
+                    ),
+                    onChanged: (_) {
+                      if (showEmptyError || showInvalidError) {
+                        setState(() {
+                          showEmptyError = false;
+                          showInvalidError = false;
+                        });
+                      }
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("Hủy"),
+                ),
+                TextButton(
+                  onPressed: () {
+                    final code = controller.text.trim();
+                    if (code.isEmpty) {
+                      setState(() {
+                        showEmptyError = true;
+                        showInvalidError = false;
+                      });
+                    } else {
+                      Navigator.pop(context, code);
+                    }
+                  },
+                  child: const Text("Tìm"),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+
+  Future<String?> _askForPasswordWithRetry(int retryCount) {
+    final TextEditingController controller = TextEditingController();
+
+    return showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text("Nhập mật khẩu đề thi"),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: controller,
+                    autofocus: true,
+                    obscureText: true,
+                    decoration: const InputDecoration(hintText: "Mật khẩu"),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  if (retryCount > 0)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        "Mật khẩu không đúng. Số lần nhập ${retryCount}/5",
+                        style: const TextStyle(color: Colors.red, fontSize: 13),
+                      ),
+                    ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("Hủy"),
+                ),
+                TextButton(
+                  onPressed: controller.text.isNotEmpty
+                      ? () => Navigator.pop(context, controller.text)
+                      : null,
+                  child: const Text("OK"),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
@@ -209,6 +354,8 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        automaticallyImplyLeading: false, // bỏ nút back
+        title: Text("Xin chào, $username", style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 10),

@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'settings_profile/notification_screen.dart';
-import 'profile_screen.dart';
-import 'add_question_screen.dart';
-import 'teacher_screen.dart';
+import 'settings_profile/thong_bao.dart';
+import 'thong_tin_ca_nhan.dart';
+import 'them_cau_hoi.dart';
+import 'trang_giao_vien.dart';
 import 'dart:math';
-import '../services/api_service.dart'; // SỬ DỤNG API SERVICE CHUNG
-import '../utils/user_prefs.dart';   // SỬ DỤNG USER PREFS
+import '../services/api_service.dart';
+import '../utils/user_prefs.dart';
+import 'dart:convert'; // Thêm import này để dùng jsonDecode
+import 'package:http/http.dart' as http;
 
 class CreateExamScreen extends StatefulWidget {
   final Map<String, dynamic>? editExam;
@@ -118,11 +120,19 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Vui lòng điền đầy đủ thông tin")));
       return;
     }
-    // ... validation logic for time ...
+
+    // XÓA BỎ KHỐI VALIDATION Ở ĐÂY VÌ ĐÃ CHUYỂN VỀ BACKEND
 
     final name = _examNameController.text.trim();
     final subject = _selectedSubject!;
-    final deadline = _selectedDate!.toIso8601String();
+    final deadlineDate = _selectedDate!;
+    final deadline = DateTime(
+      deadlineDate.year,
+      deadlineDate.month,
+      deadlineDate.day,
+      23, 59, 59,
+    ).toIso8601String();
+
     final startTime = '${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')}';
     final duration = int.tryParse(_durationController.text) ?? 0;
     final attempts = int.tryParse(_attemptsController.text) ?? 1;
@@ -132,6 +142,8 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
 
     try {
       if (widget.editExam != null) {
+        // --- XỬ LÝ CẬP NHẬT ---
+        // Phần này giữ nguyên vì không có logic StartTime/CreatedAt
         if (originalExam != null) {
           final originalDeadline = DateTime.tryParse(originalExam!['deadline'] ?? '');
           final originalStartParts = (originalExam!['startTime'] ?? '').split(':');
@@ -142,7 +154,7 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
           final hasChanges = name != (originalExam!['title'] ?? '') ||
               subject != (originalExam!['subject'] ?? '') ||
               grade != (originalExam!['grade'] ?? '') ||
-              !(_selectedDate?.isAtSameMomentAs(originalDeadline ?? DateTime(0)) ?? false) ||
+              _selectedDate != originalDeadline ||
               _selectedTime != originalStartTime ||
               duration != (originalExam!['duration'] ?? 0) ||
               attempts != (originalExam!['attempts'] ?? 1) ||
@@ -155,11 +167,13 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
           }
         }
 
-        await ApiService.updateExamById(widget.editExam!['id'], {
+        // Dữ liệu cho việc cập nhật giữ nguyên, không cần thay đổi
+        final updateData = {
           'title': name, 'subject': subject, 'deadline': deadline, 'startTime': startTime,
           'duration': duration, 'attempts': attempts, 'showScore': showScore, 'grade': grade, 'password': password,
-        });
+        };
 
+        await ApiService.updateExamById(widget.editExam!['id'], updateData);
         widget.onSave?.call();
         if (mounted) {
           Navigator.pushReplacement(context, MaterialPageRoute(
@@ -167,7 +181,9 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
             settings: const RouteSettings(arguments: "Cập nhật bài thi thành công"),
           ));
         }
+
       } else {
+        // --- XỬ LÝ TẠO MỚI ---
         final examCode = await _generateUniqueExamCode();
         final examData = {
           'title': name, 'subject': subject, 'deadline': deadline, 'startTime': startTime,
@@ -175,20 +191,28 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
           'grade': grade, 'code': examCode, 'password': password,
         };
 
-        final examId = await ApiService.createExam(examData);
+        // Gọi hàm createExam đã được sửa đổi
+        final http.Response response = await ApiService.createExam(examData);
 
-        if (examId != null && mounted) {
+        if (!mounted) return;
+
+        // Xử lý phản hồi từ server
+        if (response.statusCode == 200) {
+          final examId = jsonDecode(response.body)['id'];
           widget.onSave?.call();
           Navigator.push(context, MaterialPageRoute(
             builder: (context) => AddQuestionScreen(examName: name, examId: examId),
           ));
         } else {
-          throw Exception("API không trả về ID bài thi.");
+          // Hiển thị lỗi từ server (ví dụ: "Thời gian bắt đầu không thể ở trong quá khứ.")
+          final errorData = jsonDecode(response.body);
+          final errorMessage = errorData['message'] ?? 'Lỗi không xác định từ server.';
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage)));
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Đã xảy ra lỗi: ${e.toString()}")));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Đã xảy ra lỗi kết nối: ${e.toString()}")));
       }
     }
   }
